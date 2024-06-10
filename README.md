@@ -1,14 +1,10 @@
-These Nix expressions provide an environment for GHC development.
+<img src="https://gitlab.haskell.org/ghc/ghc.nix/badges/main/pipeline.svg"/>
 
-This repository does not contain the GHC sources themselves, so make sure
-you've cloned that repository first. The directions at https://ghc.dev are
-an excellent place to start.
-
-[![CI](https://github.com/alpmestan/ghc.nix/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/alpmestan/ghc.nix/actions/workflows/ci.yml)
-
-# Simple usage
+# GHC.nix - set up devShells for developing GHC
 
 ## Quickstart
+
+First, check out [ghc.dev](https://ghc.dev) which is an excellent place to start and get an overview about developing GHC.
 
 To enter an environment without cloning this repository you can run:
 
