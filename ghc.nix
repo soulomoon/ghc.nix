@@ -24,9 +24,11 @@ args@{ system ? builtins.currentSystem
 , withIde ? false
 , withHadrianDeps ? false
 , withDwarf ? (pkgsFor nixpkgs system).stdenv.isLinux  # enable libdw unwinding support
+, withGdb ? !((pkgsFor nixpkgs system).gdb.meta.broken or false)
 , withNuma ? (pkgsFor nixpkgs system).stdenv.isLinux
 , withDtrace ? (pkgsFor nixpkgs system).stdenv.isLinux
 , withGrind ? !((pkgsFor nixpkgs system).valgrind.meta.broken or false)
+, withPerf ? (pkgsFor nixpkgs system).stdenv.isLinux
 , withSystemLibffi ? false
 , withEMSDK ? false                    # load emscripten for js-backend
 , withWasm ? false                     # load the toolchain for wasm backend
@@ -49,6 +51,7 @@ let
   # Fold in the backward-compat synonym.
   withWasm' = withWasm || withWasiSDK;
   overlay = self: super: {
+    nodejs = super.nodejs_21;
     haskell = super.haskell // {
       packages = super.haskell.packages // {
         ${bootghc} = super.haskell.packages.${bootghc}.override (old: {
@@ -123,10 +126,12 @@ let
     ++ docsPackages
     ++ optional withLlvm llvmForGhc
     ++ optional withGrind valgrind
-    ++ optional withEMSDK emscripten
+    ++ optional withPerf linuxPackages.perf
+    ++ optionals withEMSDK [ emscripten nodejs ]
     ++ optionals withWasm' [ wasi-sdk wasmtime ]
     ++ optional withNuma numactl
     ++ optional withDwarf elfutils
+    ++ optional withGdb gdb
     ++ optional withGhcid ghcid
     ++ optional withIde hspkgs.haskell-language-server
     ++ optional withIde clang-tools # N.B. clang-tools for clangd
@@ -147,8 +152,8 @@ let
 
   alex =
     if lib.versionAtLeast version "9.1"
-    then noTest (hspkgs.callHackage "alex" "3.2.6" { })
-    else noTest (hspkgs.callHackage "alex" "3.2.5" { });
+    then noTest (hspkgs.callHackage "alex" "3.2.7.4" { })
+    else noTest (hspkgs.callHackage "alex" "3.2.7" { });
 
   # Convenient tools
   configureGhc = writeShellScriptBin "configure_ghc" "$CONFIGURE $CONFIGURE_ARGS $@";
