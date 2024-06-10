@@ -1,6 +1,78 @@
-build:
-  image: nixos/nix:2.3.12
+.setup-nix: 
   tags:
     - x86_64-linux
+  image: nixos/nix:latest
+
+  before_script: 
+    # set up nix
+    - mkdir -p ~/.config/nix
+    - echo "extra-experimental-features = nix-command flakes" > ~/.config/nix/nix.conf
+    - nix profile install --impure nixpkgs#cachix
+    - | 
+      cachix use ghc-nix
+
+      if [ -n "$CACHIX_AUTH_TOKEN" ]; then
+        echo "auth token present, watching store"
+        cachix watch-store ghc-nix &
+      else 
+        echo "auth token not present"
+      fi
+
+stages: 
+  - build 
+  - test
+
+build-shell:
+  extends: .setup-nix
+  stage: build
   script:
-    - nix build
+    - nix-shell --pure shell.nix --command "echo Ok"
+
+check-flake:
+  extends: .setup-nix
+  stage: test
+  script:
+    - nix flake check -Lv
+
+build-ghc-legacy:
+  extends: .setup-nix
+  stage: test
+  script:
+    - pushd $(mktemp -d)
+    - git clone --recurse-submodules https://gitlab.haskell.org/ghc/ghc.git
+    - cd ghc/
+
+    - | 
+       nix-shell --pure $CI_PROJECT_DIR/shell.nix --command "
+           ./boot && configure_ghc;
+           pushd hadrian; cabal new-update; cabal new-build -j all; popd;
+           echo :q | hadrian/ghci | tail -n2 | grep 'Ok,';
+           hadrian/build -j --flavour=quickest;
+           hadrian/build -j --flavour=quickest test --test-root-dirs=testsuite/tests/programs;"
+
+build-ghc-flakes:
+  extends: .setup-nix
+  stage: test
+  script:
+    - pushd $(mktemp -d)
+    - git clone --recurse-submodules https://gitlab.haskell.org/ghc/ghc.git
+    - cd ghc/
+
+    - nix develop -Lv --fallback $CI_PROJECT_DIR# -c bash -c "
+           ./boot && configure_ghc;
+           pushd hadrian; cabal new-update; cabal new-build -j all; popd;
+           echo :q | hadrian/ghci | tail -n2 | grep 'Ok,';
+           hadrian/build -j --flavour=quickest;
+           hadrian/build -j --flavour=quickest test --test-root-dirs=testsuite/tests/programs;"
+
+smoke-test-cross:
+  extends: .setup-nix
+  stage: test
+  script:
+    - pushd $(mktemp -d)
+    - git clone --recurse-submodules https://gitlab.haskell.org/ghc/ghc.git
+    - cd ghc/
+
+    - nix develop -Lv --fallback $CI_PROJECT_DIR#wasm-cross -c bash -c "./boot && configure_ghc"
+    - nix develop -Lv --fallback $CI_PROJECT_DIR#wasi-cross -c true
+    - nix develop -Lv --fallback $CI_PROJECT_DIR#js-cross -c bash -c "./boot && configure_ghc"
