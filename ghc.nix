@@ -128,7 +128,7 @@ let
     ++ optional withGrind valgrind
     ++ optional withPerf linuxPackages.perf
     ++ optionals withEMSDK [ emscripten nodejs ]
-    ++ optionals withWasm' [ wasi-sdk wasmtime ]
+    ++ optionals withWasm' [ wasi-sdk wasmtime nodejs ]
     ++ optional withNuma numactl
     ++ optional withDwarf elfutils
     ++ optional withGdb gdb
