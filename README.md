@@ -9,7 +9,7 @@ First, check out [ghc.dev](https://ghc.dev) which is an excellent place to start
 To enter an environment without cloning this repository you can run:
 
 ```sh
-nix-shell https://github.com/alpmestan/ghc.nix/archive/master.tar.gz --attr devShells.<your-system>.default
+nix-shell https://gitlab.haskell.org/ghc/ghc.nix/-/archive/main/ghc.nix-main.tar.gz --attr devShells.<your-system>.default
 ```
 where `<your-system>` would be the nix name of your system, in the typical case this is one of
 - `x86_64-linux` (for `x86_64` Linux systems)
@@ -19,7 +19,7 @@ where `<your-system>` would be the nix name of your system, in the typical case 
 
 Hence, an invocation on an `x86_64` Linux system would look like this:
 ```sh
-nix-shell https://github.com/alpmestan/ghc.nix/archive/master.tar.gz --attr devShells.x86_64-linux.default
+nix-shell https://gitlab.haskell.org/ghc/ghc.nix/-/archive/main/ghc.nix-main.tar.gz --attr devShells.x86_64-linux.default
 ```
 
 ### Using flakes
@@ -27,7 +27,7 @@ nix-shell https://github.com/alpmestan/ghc.nix/archive/master.tar.gz --attr devS
 This repository is flakes enabled, which means, that you can more easily get a `devShell` using:
 
 ```sh
-nix develop github:alpmestan/ghc.nix
+nix develop git+https://gitlab.haskell.org/ghc/ghc.nix
 ```
 
 ## Building GHC
@@ -86,7 +86,7 @@ When using flakes, this argument is also automatically applied.
 
 
 ```sh
-$ nix develop github:alpmestan/ghc.nix
+$ nix develop git+https://gitlab.haskell.org/ghc/ghc.nix
 # HLS is already available
 ```
 
@@ -124,7 +124,7 @@ HLS should also just work.
 ```sh
 nix-shell ~/ghc.nix --arg withWasm true
 # or
-nix develop github:alpmestan/ghc.nix#wasm-cross
+nix develop git+https://gitlab.haskell.org/ghc/ghc.nix#wasm-cross
 ```
 
 ### For JavaScript:
@@ -132,7 +132,7 @@ nix develop github:alpmestan/ghc.nix#wasm-cross
 ```sh
 nix-shell ~/ghc.nix --arg withEMSDK true
 # or
-nix develop github:alpmestan/ghc.nix#js-cross
+nix develop git+https://gitlab.haskell.org/ghc/ghc.nix#js-cross
 ```
 
 **Note** for the JavaScript backend, use `bignum=native` or the `native_bignum`
@@ -184,7 +184,7 @@ no good way in `nix` to pass `nix` expressions to flakes.
 
 This is why we provide a flake template that you can add to your git worktree as follows:
 ```sh
-$ nix flake init -t github:alpmestan/ghc.nix
+$ nix flake init -t git+https://gitlab.haskell.org/ghc/ghc.nix
 ```
 
 This will add three files to your worktree:
@@ -246,7 +246,7 @@ be careful to specify the path to the `shell.nix`, not to the `default.nix`.
 
 With `nix-direnv` support, it is possible to make [`direnv`](https://github.com/direnv/direnv/) load `ghc.nix`
 upon entering your local `ghc` directory. Just put a `.envrc` containing `use flake /home/theUser/path/to/ghc.nix#`
-in the `ghc` directory. This works for all flake URLs, so you can also put `use flake github:alpmestan/ghc.nix#` in
+in the `ghc` directory. This works for all flake URLs, so you can also put `use flake git+https://gitlab.haskell.org/ghc/ghc.nix#` in
 there and it should work.
 
 > **Warning**
