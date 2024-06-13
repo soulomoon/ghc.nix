@@ -3,7 +3,7 @@
   nixConfig = {
     bash-prompt = "\\[\\e[34;1m\\]ghc.nix ~ \\[\\e[0m\\]";
     extra-substituters = [ "https://ghc-nix.cachix.org" ];
-    extra-trusted-public-keys = [ "ghc-nix.cachix.org-1:wI8l3tirheIpjRnr2OZh6YXXNdK2fVQeOI4SVz/X8nA=" ];
+    extra-trusted-public-keys = [ "ghc-nix.cachix.org-1:ziC/I4BPqeA4VbtOFpFpu6D1t6ymFvRWke/lc2+qjcg=" ];
   };
 
   inputs = {
