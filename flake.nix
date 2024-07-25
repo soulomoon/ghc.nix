@@ -95,7 +95,7 @@
       welcomeText = ''
         Welcome to ghc.nix!
         Set your settings in the `userSettings` attributeset in the `flake.nix`.
-        Learn more about available arguments at https://github.com/alpmestan/ghc.nix/
+        Learn more about available arguments at https://gitlab.haskell.org/ghc/ghc.nix/
       '';
     };
 
