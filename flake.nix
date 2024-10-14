@@ -7,7 +7,9 @@
   };
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
+    # FUTUREWORK: Use a released version (!= unstable) of nixpkgs again, once GHC 9.10 is
+    # fully supported by it.
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
