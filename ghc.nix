@@ -51,7 +51,7 @@ let
   # Fold in the backward-compat synonym.
   withWasm' = withWasm || withWasiSDK;
   overlay = self: super: {
-    nodejs = super.nodejs_21;
+    nodejs = super.nodejs_22;
     haskell = super.haskell // {
       packages = super.haskell.packages // {
         ${bootghc} = super.haskell.packages.${bootghc}.override (old: {
