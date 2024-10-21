@@ -203,6 +203,9 @@ let
         librarySystemDepends = depsSystem;
       });
 
+  # These days we have hls-notes-plugin, part of HLS-2.8.0.0.
+  # Might as well remove this in the future (says the author of this script),
+  # but I haven't tested HLS-2.8 yet.
   findNoteDef = writeShellScriptBin "find_note_def" ''
     ret=$(${pkgs.ripgrep}/bin/rg  --no-messages --vimgrep -i --engine pcre2 "^ ?[{\\-#*]* *\QNote [$1]\E\s*$")
     n_defs=$(echo "$ret" | sed '/^$/d' | wc -l)
