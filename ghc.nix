@@ -80,16 +80,13 @@ in
 with pkgs;
 
 let
-  llvmForGhc =
-    if lib.versionAtLeast version "9.1"
-    then llvm_10
-    else llvm_9;
+  llvmForGhc = llvm_10;
 
   stdenv =
     if useClang
     then pkgs.clangStdenv
     else pkgs.stdenv;
-  noTest = haskell.lib.dontCheck;
+  #noTest = haskell.lib.dontCheck;
 
   hspkgs = pkgs.haskell.packages.${bootghc};
 
@@ -145,23 +142,23 @@ let
     ])
   );
 
-  happy =
-    if lib.versionAtLeast version "9.1"
-    then noTest (hspkgs.callHackage "happy" "1.20.1.1" { })
-    else noTest (haskell.packages.ghc865Binary.callHackage "happy" "1.19.12" { });
+  # happy =
+  # if lib.versionAtLeast version "9.1"
+  # then noTest (hspkgs.callHackage "happy" "1.20.1.1" { })
+  # else noTest (haskell.packages.ghc865Binary.callHackage "happy" "1.19.12" { });
 
-  alex =
-    if lib.versionAtLeast version "9.1"
-    then noTest (hspkgs.callHackage "alex" "3.2.7.4" { })
-    else noTest (hspkgs.callHackage "alex" "3.2.7" { });
+  # alex =
+  # if lib.versionAtLeast version "9.1"
+  # then noTest (hspkgs.callHackage "alex" "3.2.7.4" { })
+  # else noTest (hspkgs.callHackage "alex" "3.2.7" { });
 
   # Convenient tools
   configureGhc = writeShellScriptBin "configure_ghc" "$CONFIGURE $CONFIGURE_ARGS $@";
   validateGhc = writeShellScriptBin "validate_ghc" "config_args='$CONFIGURE_ARGS' ./validate $@";
 
   depsTools = [
-    happy
-    alex
+    hspkgs.happy
+    hspkgs.alex
     hspkgs.cabal-install
     configureGhc
     validateGhc
