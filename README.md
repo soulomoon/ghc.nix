@@ -188,9 +188,10 @@ $ nix flake init -t git+https://gitlab.haskell.org/ghc/ghc.nix
 ```
 
 This will add three files to your worktree:
-- a `flake.nix` which you can edit your `userSettings` in as usual
-- a `flake.lock` file which pins the `ghc.nix` version and transitively `nixpkgs` and `all-cabal-hashes`
+- a `.ghc-nix/flake.nix` which you can edit your `userSettings` in as usual
+- a `.ghc-nix/flake.lock` file which pins the `ghc.nix` version and transitively `nixpkgs` and `all-cabal-hashes`
 - a `.envrc` file for convenient use with `direnv`
+The flake file lives in its own directory so that `nix develop` does not copy the whole worktree into the store just to evaluate the flake.
 
 ## Legacy nix-commands support
 
