@@ -14,8 +14,12 @@ in
 args@{ system ? builtins.currentSystem
 , nixpkgs
 , all-cabal-hashes
-, bootghc ? "ghc96"
-, version ? "9.9"
+  # GHC sources are supposed to be buildable a) with the latest major GHC release,
+  # b) with the penultimate major GHC release, c) with GHC built from exactly the
+  # same sources.
+  # (https://gitlab.haskell.org/ghc/ghc/-/wikis/building/preparation/tools)
+, bootghc ? "ghc910"
+, version ? "9.13"
 , hadrianCabal ? hadrianPath
 , useClang ? false  # use Clang for C compilation
 , withLlvm ? false
@@ -51,7 +55,7 @@ let
   # Fold in the backward-compat synonym.
   withWasm' = withWasm || withWasiSDK;
   overlay = self: super: {
-    nodejs = super.nodejs_21;
+    nodejs = super.nodejs_22;
     haskell = super.haskell // {
       packages = super.haskell.packages // {
         ${bootghc} = super.haskell.packages.${bootghc}.override (old: {
