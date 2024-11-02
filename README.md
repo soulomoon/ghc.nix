@@ -224,8 +224,8 @@ be careful to specify the path to the `shell.nix`, not to the `default.nix`.
 | `system` | the system this is run on | `builtins.currentSystem` or flake system | ✅ |
 | `nixpkgs` | the stable `nixpkgs` set used | `nixpkgs` as pinned in the lock-file | ✅ |
 | `all-cabal-hashes` | the `all-cabal-hashes` version used | `all-cabal-hashes` as pinned in the lock-file | ✅ |
-| `bootghc` | the bootstrap `ghc` version | `"ghc924"` | ❌ |
-| `version` | the version of `ghc` to be bootstrapped | `"9.3"` | ❌ |
+| `bootghc` | the bootstrap `ghc` version (see https://gitlab.haskell.org/ghc/ghc/-/wikis/building/preparation/tools) | `"ghc910"` | ❌ |
+| `version` | the version of `ghc` to be bootstrapped | `"9.13"` | ❌ |
 | `hadrianCabal` | where `hadrian` is to be found |  `(builtins.getEnv "PWD") + "/hadrian/hadrian.cabal"` | ❌ |
 | `useClang` | whether Clang is to be used for C compilation | `false` | ❌ |
 | `withLlvm` | whether `llvm` should be included in the `librarySystemDepends` | `false` | ❌ |
