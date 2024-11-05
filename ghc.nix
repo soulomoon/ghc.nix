@@ -42,6 +42,7 @@ args@{ system ? builtins.currentSystem
   # will point to the definition of the Note "Adding a language extension"
 , wasi-sdk
 , wasmtime
+, node-wasm
 , crossTarget ? null
 }:
 
@@ -129,7 +130,7 @@ let
     ++ optional withGrind valgrind
     ++ optional withPerf linuxPackages.perf
     ++ optionals withEMSDK [ emscripten nodejs ]
-    ++ optionals withWasm' [ wasi-sdk wasmtime nodejs ]
+    ++ optionals withWasm' [ wasi-sdk wasmtime node-wasm ]
     ++ optional withNuma numactl
     ++ optional withDwarf elfutils
     ++ optional withGdb gdb

@@ -46,6 +46,7 @@
       inherit nixpkgs system;
       all-cabal-hashes = all-cabal-hashes.outPath;
       inherit (ghc-wasm-meta.outputs.packages."${system}") wasi-sdk wasmtime;
+      node-wasm = ghc-wasm-meta.outputs.packages."${system}".nodejs;
     };
 
     pre-commit-check = system: pre-commit-hooks.lib.${system}.run {
