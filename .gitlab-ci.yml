@@ -76,3 +76,4 @@ smoke-test-cross:
     - nix develop -Lv --fallback $CI_PROJECT_DIR#wasm-cross -c bash -c "./boot && configure_ghc"
     - nix develop -Lv --fallback $CI_PROJECT_DIR#wasi-cross -c true
     - nix develop -Lv --fallback $CI_PROJECT_DIR#js-cross -c bash -c "./boot && configure_ghc"
+    - nix develop -Lv --fallback $CI_PROJECT_DIR#riscv64-cross -c bash -c "./boot && configure_ghc"

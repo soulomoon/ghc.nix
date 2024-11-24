@@ -50,6 +50,7 @@ args@{ system ? builtins.currentSystem
 , wasmtime
 , node-wasm
 , crossTarget ? null
+, withQemu ? false
 }:
 
 # Assert that args has only one of withWasm and withWasiSDK.
@@ -88,12 +89,28 @@ let
   pkgs = import nixpkgs { inherit system; overlays = [ overlay ]; };
   inherit (pkgs) lib;
 
-  llvmForGhc = pkgs.llvm_10;
+  # Try to find pkgsCross for the cross target.
+  crossPkgs' = builtins.foldl'
+    (acc: elem:
+      if acc != null then
+        acc
+      # pkgsCross.ghcjs provides no C compiler, so we fallback to the host's stdenv.
+      else if elem.targetPlatform.config == crossTarget
+        && !elem.targetPlatform.isGhcjs then
+        builtins.trace "Found ${crossTarget} in pkgsCross." elem
+      else
+        null)
+    null
+    (builtins.attrValues pkgs.pkgsCross);
+
+  crossPkgs = if crossPkgs' == null then pkgs else crossPkgs';
+
+  llvmForGhc = pkgs.llvm_13;
 
   stdenv =
     if useClang
-    then pkgs.clangStdenv
-    else pkgs.stdenv;
+    then crossPkgs.clangStdenv
+    else crossPkgs.stdenv;
   #noTest = haskell.lib.dontCheck;
 
   hspkgs = pkgs.haskell.packages.${bootghc};
@@ -107,47 +124,43 @@ let
   fonts = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
   docsPackages = if withDocs then [ pkgs.python3Packages.sphinx ourtexlive ] else [ ];
 
-  depsSystem =
-    [
-      pkgs.autoconf
-      pkgs.automake
-      pkgs.m4
-      pkgs.less
-      pkgs.gmp.dev
-      pkgs.gmp.out
-      pkgs.glibcLocales
-      pkgs.ncurses.dev
-      pkgs.ncurses.out
-      pkgs.perl
-      pkgs.git
-      pkgs.file
-      pkgs.which
-      pkgs.python3
-      pkgs.xorg.lndir # for source distribution generation
-      pkgs.zlib.out
-      pkgs.zlib.dev
-      pkgs.hlint
-    ]
-    ++ docsPackages
-    ++ lib.optional withLlvm llvmForGhc
-    ++ lib.optional withGrind pkgs.valgrind
-    ++ lib.optional withPerf pkgs.linuxPackages.perf
-    ++ lib.optionals withEMSDK [ pkgs.emscripten pkgs.nodejs ]
-    ++ lib.optionals withWasm' [ wasi-sdk wasmtime node-wasm ]
-    ++ lib.optional withNuma pkgs.numactl
-    ++ lib.optional withDwarf pkgs.elfutils
-    ++ lib.optional withGdb pkgs.gdb
-    ++ lib.optional withGhcid pkgs.ghcid
-    ++ lib.optional withIde hspkgs.haskell-language-server
-    ++ lib.optional withIde pkgs.clang-tools # N.B. clang-tools for clangd
-    ++ lib.optional withDtrace pkgs.linuxPackages.systemtap
-    ++ (if (! stdenv.isDarwin)
-    then [ pkgs.pxz ]
-    else [
-      pkgs.libiconv
-      pkgs.darwin.libobjc
-      pkgs.darwin.apple_sdk.frameworks.Foundation
-    ]);
+  depsSystem = [
+    pkgs.autoconf
+    pkgs.automake
+    pkgs.m4
+    pkgs.less
+    pkgs.glibcLocales
+    pkgs.perl
+    pkgs.git
+    pkgs.file
+    pkgs.which
+    pkgs.python3
+    pkgs.xorg.lndir # for source distribution generation
+    crossPkgs.zlib.out
+    crossPkgs.zlib.dev
+    pkgs.hlint
+  ]
+  ++ docsPackages
+  ++ lib.optional withLlvm llvmForGhc
+  ++ lib.optional withGrind pkgs.valgrind
+  ++ lib.optional withPerf pkgs.linuxPackages.perf
+  ++ lib.optionals withEMSDK [ pkgs.emscripten pkgs.nodejs ]
+  ++ lib.optionals withWasm' [ wasi-sdk wasmtime node-wasm ]
+  ++ lib.optional withNuma pkgs.numactl
+  ++ lib.optional withDwarf pkgs.elfutils
+  ++ lib.optional withGdb pkgs.gdb
+  ++ lib.optional withGhcid pkgs.ghcid
+  ++ lib.optional withIde hspkgs.haskell-language-server
+  ++ lib.optional withIde pkgs.clang-tools # N.B. clang-tools for clangd
+  ++ lib.optional withDtrace pkgs.linuxPackages.systemtap
+  ++ lib.optional withQemu pkgs.qemu
+  ++ (if (!stdenv.isDarwin) then
+    [ pkgs.pxz ]
+  else [
+    pkgs.libiconv
+    pkgs.darwin.libobjc
+    pkgs.darwin.apple_sdk.frameworks.Foundation
+  ]);
 
   # happy =
   # if lib.versionAtLeast version "9.1"
@@ -232,21 +245,21 @@ let
   '';
 
   CONFIGURE_ARGS = [
-    "--with-gmp-includes=${pkgs.gmp.dev}/include"
-    "--with-gmp-libraries=${pkgs.gmp}/lib"
-    "--with-curses-includes=${pkgs.ncurses.dev}/include"
-    "--with-curses-libraries=${pkgs.ncurses.out}/lib"
+    "--with-gmp-includes=${crossPkgs.gmp.dev}/include"
+    "--with-gmp-libraries=${crossPkgs.gmp}/lib"
+    "--with-curses-includes=${crossPkgs.ncurses.dev}/include"
+    "--with-curses-libraries=${crossPkgs.ncurses.out}/lib"
   ] ++ lib.optionals withNuma [
-    "--with-libnuma-includes=${pkgs.numactl}/include"
-    "--with-libnuma-libraries=${pkgs.numactl}/lib"
+    "--with-libnuma-includes=${crossPkgs.numactl}/include"
+    "--with-libnuma-libraries=${crossPkgs.numactl}/lib"
   ] ++ lib.optionals withDwarf [
-    "--with-libdw-includes=${pkgs.elfutils.dev}/include"
-    "--with-libdw-libraries=${pkgs.elfutils.out}/lib"
+    "--with-libdw-includes=${crossPkgs.elfutils.dev}/include"
+    "--with-libdw-libraries=${crossPkgs.elfutils.out}/lib"
     "--enable-dwarf-unwind"
   ] ++ lib.optionals withSystemLibffi [
     "--with-system-libffi"
-    "--with-ffi-includes=${pkgs.libffi.dev}/include"
-    "--with-ffi-libraries=${pkgs.libffi.out}/lib"
+    "--with-ffi-includes=${crossPkgs.libffi.dev}/include"
+    "--with-ffi-libraries=${crossPkgs.libffi.out}/lib"
   ] ++ lib.optionals (crossTarget != null) [
     "--target=${crossTarget}"
   ];
@@ -266,10 +279,15 @@ hspkgs.shellFor {
 
   shellHook = ''
     # somehow, CC gets overridden so we set it again here.
-    export CC=${stdenv.cc}/bin/cc
+    export CC=${stdenv.cc}/bin/${stdenv.cc.targetPrefix}cc
     # This prevents `./configure` from detecting the system `g++` on macOS,
     # fixing builds on some older GHC versions (like `ghc-9.7-start`):
-    export CXX=${stdenv.cc}/bin/c++
+    export CXX=${stdenv.cc}/bin/${stdenv.cc.targetPrefix}c++
+    export AR=${stdenv.cc.bintools.bintools}/bin/${stdenv.cc.targetPrefix}ar
+    export RANLIB=${stdenv.cc.bintools.bintools}/bin/${stdenv.cc.targetPrefix}ranlib
+    export NM=${stdenv.cc.bintools.bintools}/bin/${stdenv.cc.targetPrefix}nm
+    export LD=${stdenv.cc.bintools}/bin/${stdenv.cc.targetPrefix}ld
+    export LLVMAS=${llvmForGhc}/bin/${stdenv.cc.targetPrefix}clang
     export GHC=$NIX_GHC
     export GHCPKG=$NIX_GHCPKG
     export HAPPY=${hspkgs.happy}/bin/happy
@@ -292,7 +310,6 @@ hspkgs.shellFor {
     # "nix-shell --pure" resets LANG to POSIX, this breaks "make TAGS".
     export LANG="en_US.UTF-8"
     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${lib.makeLibraryPath depsSystem}"
-    unset LD
 
     ${lib.optionalString withDocs "export FONTCONFIG_FILE=${fonts}"}
 
