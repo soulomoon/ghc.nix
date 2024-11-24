@@ -84,6 +84,10 @@
       };
     });
 
+    formatter = perSystem (system:
+      nixpkgs.legacyPackages.${system}.nixpkgs-fmt
+    );
+
     checks = perSystem (system: {
       formatting = pre-commit-check system;
       ghc-nix-shell = devShells.${system}.ghc-nix;
