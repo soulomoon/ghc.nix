@@ -264,7 +264,6 @@ hspkgs.shellFor rec {
     export CC=${stdenv.cc}/bin/cc
     # This prevents `./configure` from detecting the system `g++` on macOS,
     # fixing builds on some older GHC versions (like `ghc-9.7-start`):
-    #     /usr/bin/g++ -std=gnu++11: No such file or directory
     export CXX=${stdenv.cc}/bin/c++
     export GHC=$NIX_GHC
     export GHCPKG=$NIX_GHCPKG
