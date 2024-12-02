@@ -86,12 +86,9 @@ let
   };
 
   pkgs = import nixpkgs { inherit system; overlays = [ overlay ]; };
-in
+  inherit (pkgs) lib;
 
-with pkgs;
-
-let
-  llvmForGhc = llvm_10;
+  llvmForGhc = pkgs.llvm_10;
 
   stdenv =
     if useClang
@@ -108,50 +105,49 @@ let
         framed capt-of wrapfig needspace dejavu-otf helvetic upquote;
     };
   fonts = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
-  docsPackages = if withDocs then [ python3Packages.sphinx ourtexlive ] else [ ];
+  docsPackages = if withDocs then [ pkgs.python3Packages.sphinx ourtexlive ] else [ ];
 
-  depsSystem = with lib; (
+  depsSystem =
     [
-      autoconf
-      automake
-      m4
-      less
-      gmp.dev
-      gmp.out
-      glibcLocales
-      ncurses.dev
-      ncurses.out
-      perl
-      git
-      file
-      which
-      python3
-      xorg.lndir # for source distribution generation
-      zlib.out
-      zlib.dev
-      hlint
+      pkgs.autoconf
+      pkgs.automake
+      pkgs.m4
+      pkgs.less
+      pkgs.gmp.dev
+      pkgs.gmp.out
+      pkgs.glibcLocales
+      pkgs.ncurses.dev
+      pkgs.ncurses.out
+      pkgs.perl
+      pkgs.git
+      pkgs.file
+      pkgs.which
+      pkgs.python3
+      pkgs.xorg.lndir # for source distribution generation
+      pkgs.zlib.out
+      pkgs.zlib.dev
+      pkgs.hlint
     ]
     ++ docsPackages
-    ++ optional withLlvm llvmForGhc
-    ++ optional withGrind valgrind
-    ++ optional withPerf linuxPackages.perf
-    ++ optionals withEMSDK [ emscripten nodejs ]
-    ++ optionals withWasm' [ wasi-sdk wasmtime node-wasm ]
-    ++ optional withNuma numactl
-    ++ optional withDwarf elfutils
-    ++ optional withGdb gdb
-    ++ optional withGhcid ghcid
-    ++ optional withIde hspkgs.haskell-language-server
-    ++ optional withIde clang-tools # N.B. clang-tools for clangd
-    ++ optional withDtrace linuxPackages.systemtap
+    ++ lib.optional withLlvm llvmForGhc
+    ++ lib.optional withGrind pkgs.valgrind
+    ++ lib.optional withPerf pkgs.linuxPackages.perf
+    ++ lib.optionals withEMSDK [ pkgs.emscripten pkgs.nodejs ]
+    ++ lib.optionals withWasm' [ wasi-sdk wasmtime node-wasm ]
+    ++ lib.optional withNuma pkgs.numactl
+    ++ lib.optional withDwarf pkgs.elfutils
+    ++ lib.optional withGdb pkgs.gdb
+    ++ lib.optional withGhcid pkgs.ghcid
+    ++ lib.optional withIde hspkgs.haskell-language-server
+    ++ lib.optional withIde pkgs.clang-tools # N.B. clang-tools for clangd
+    ++ lib.optional withDtrace pkgs.linuxPackages.systemtap
     ++ (if (! stdenv.isDarwin)
-    then [ pxz ]
+    then [ pkgs.pxz ]
     else [
-      libiconv
-      darwin.libobjc
-      darwin.apple_sdk.frameworks.Foundation
-    ])
-  );
+      pkgs.libiconv
+      pkgs.darwin.libobjc
+      pkgs.darwin.apple_sdk.frameworks.Foundation
+    ]);
 
   # happy =
   # if lib.versionAtLeast version "9.1"
@@ -164,8 +160,8 @@ let
   # else noTest (hspkgs.callHackage "alex" "3.2.7" { });
 
   # Convenient tools
-  configureGhc = writeShellScriptBin "configure_ghc" "$CONFIGURE $CONFIGURE_ARGS $@";
-  validateGhc = writeShellScriptBin "validate_ghc" "config_args='$CONFIGURE_ARGS' ./validate $@";
+  configureGhc = pkgs.writeShellScriptBin "configure_ghc" "$CONFIGURE $CONFIGURE_ARGS $@";
+  validateGhc = pkgs.writeShellScriptBin "validate_ghc" "config_args='$CONFIGURE_ARGS' ./validate $@";
 
   depsTools = [
     hspkgs.happy
@@ -187,10 +183,11 @@ let
         (
           let
             guessedGhcSrcDir = dirOf (dirOf hadrianCabal);
-          in
-          rec {
             ghc-platform = hspkgs.callCabal2nix "ghc-platform" (/. + guessedGhcSrcDir + "/libraries/ghc-platform") { };
             ghc-toolchain = hspkgs.callCabal2nix "ghc-toolchain" (/. + guessedGhcSrcDir + "/utils/ghc-toolchain") { inherit ghc-platform; };
+          in
+          {
+            inherit ghc-platform ghc-toolchain;
           }
         )
     else
@@ -200,13 +197,13 @@ let
         license = "BSD";
         src = builtins.filterSource (_: _: false) ./.;
 
-        libraryHaskellDepends = with hspkgs; lib.optionals withHadrianDeps [
-          extra
-          QuickCheck
-          shake
-          unordered-containers
-          cryptohash-sha256
-          base16-bytestring
+        libraryHaskellDepends = lib.optionals withHadrianDeps [
+          hspkgs.extra
+          hspkgs.QuickCheck
+          hspkgs.shake
+          hspkgs.unordered-containers
+          hspkgs.cryptohash-sha256
+          hspkgs.base16-bytestring
         ];
         librarySystemDepends = depsSystem;
       });
@@ -214,7 +211,7 @@ let
   # These days we have hls-notes-plugin, part of HLS-2.8.0.0.
   # Might as well remove this in the future (says the author of this script),
   # but I haven't tested HLS-2.8 yet.
-  findNoteDef = writeShellScriptBin "find_note_def" ''
+  findNoteDef = pkgs.writeShellScriptBin "find_note_def" ''
     ret=$(${pkgs.ripgrep}/bin/rg  --no-messages --vimgrep -i --engine pcre2 "^ ?[{\\-#*]* *\QNote [$1]\E\s*$")
     n_defs=$(echo "$ret" | sed '/^$/d' | wc -l)
     while IFS= read -r line; do
@@ -233,8 +230,28 @@ let
     fi
     exit 0
   '';
+
+  CONFIGURE_ARGS = [
+    "--with-gmp-includes=${pkgs.gmp.dev}/include"
+    "--with-gmp-libraries=${pkgs.gmp}/lib"
+    "--with-curses-includes=${pkgs.ncurses.dev}/include"
+    "--with-curses-libraries=${pkgs.ncurses.out}/lib"
+  ] ++ lib.optionals withNuma [
+    "--with-libnuma-includes=${pkgs.numactl}/include"
+    "--with-libnuma-libraries=${pkgs.numactl}/lib"
+  ] ++ lib.optionals withDwarf [
+    "--with-libdw-includes=${pkgs.elfutils.dev}/include"
+    "--with-libdw-libraries=${pkgs.elfutils.out}/lib"
+    "--enable-dwarf-unwind"
+  ] ++ lib.optionals withSystemLibffi [
+    "--with-system-libffi"
+    "--with-ffi-includes=${pkgs.libffi.dev}/include"
+    "--with-ffi-libraries=${pkgs.libffi.out}/lib"
+  ] ++ lib.optionals (crossTarget != null) [
+    "--target=${crossTarget}"
+  ];
 in
-hspkgs.shellFor rec {
+hspkgs.shellFor {
   packages = _pkgset: [ hsdrv ];
   nativeBuildInputs = depsTools;
   buildInputs = depsSystem;
@@ -244,26 +261,8 @@ hspkgs.shellFor rec {
   # Without this, we see a whole bunch of warnings about LANG, LC_ALL and locales in general.
   # In particular, this makes many tests fail because those warnings show up in test outputs too...
   # The solution is from: https://github.com/NixOS/nix/issues/318#issuecomment-52986702
-  LOCALE_ARCHIVE = if stdenv.isLinux then "${glibcLocales}/lib/locale/locale-archive" else "";
-  CONFIGURE_ARGS = [
-    "--with-gmp-includes=${gmp.dev}/include"
-    "--with-gmp-libraries=${gmp}/lib"
-    "--with-curses-includes=${ncurses.dev}/include"
-    "--with-curses-libraries=${ncurses.out}/lib"
-  ] ++ lib.optionals withNuma [
-    "--with-libnuma-includes=${numactl}/include"
-    "--with-libnuma-libraries=${numactl}/lib"
-  ] ++ lib.optionals withDwarf [
-    "--with-libdw-includes=${elfutils.dev}/include"
-    "--with-libdw-libraries=${elfutils.out}/lib"
-    "--enable-dwarf-unwind"
-  ] ++ lib.optionals withSystemLibffi [
-    "--with-system-libffi"
-    "--with-ffi-includes=${libffi.dev}/include"
-    "--with-ffi-libraries=${libffi.out}/lib"
-  ] ++ lib.optionals (crossTarget != null) [
-    "--target=${crossTarget}"
-  ];
+  LOCALE_ARCHIVE = if stdenv.isLinux then "${pkgs.glibcLocales}/lib/locale/locale-archive" else "";
+  inherit CONFIGURE_ARGS;
 
   shellHook = ''
     # somehow, CC gets overridden so we set it again here.
@@ -273,11 +272,11 @@ hspkgs.shellFor rec {
     export CXX=${stdenv.cc}/bin/c++
     export GHC=$NIX_GHC
     export GHCPKG=$NIX_GHCPKG
-    export HAPPY=${happy}/bin/happy
-    export ALEX=${alex}/bin/alex
+    export HAPPY=${hspkgs.happy}/bin/happy
+    export ALEX=${hspkgs.alex}/bin/alex
     export CONFIGURE=./configure
-    ${lib.optionalString withEMSDK "export EMSDK=${emscripten}"}
-    ${lib.optionalString withEMSDK "export EMSDK_LLVM=${emscripten}/bin/emscripten-llvm"}
+    ${lib.optionalString withEMSDK "export EMSDK=${pkgs.emscripten}"}
+    ${lib.optionalString withEMSDK "export EMSDK_LLVM=${pkgs.emscripten}/bin/emscripten-llvm"}
     ${ # prevents sub word sized atomic operations not available issues
        # see: https://gitlab.haskell.org/ghc/ghc/-/wikis/javascript-backend/building#configure-fails-with-sub-word-sized-atomic-operations-not-available
       lib.optionalString withEMSDK ''

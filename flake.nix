@@ -32,80 +32,90 @@
     ghc-wasm-meta.url = "gitlab:ghc/ghc-wasm-meta?host=gitlab.haskell.org";
   };
 
-  outputs = { nixpkgs, all-cabal-hashes, pre-commit-hooks, ghc-wasm-meta, ... }: with nixpkgs.lib; let
-    supportedSystems =
-      # allow nix flake show and nix flake check when passing --impure
-      if builtins.hasAttr "currentSystem" builtins
-      then [ builtins.currentSystem ]
-      else nixpkgs.lib.systems.flakeExposed;
-    perSystem = genAttrs supportedSystems;
+  outputs =
+    { self
+    , nixpkgs
+      # deadnix: skip
+    , flake-compat
+    , all-cabal-hashes
+    , pre-commit-hooks
+    , ghc-wasm-meta
+    ,
+    }:
+    let
+      supportedSystems =
+        # allow nix flake show and nix flake check when passing --impure
+        if builtins.hasAttr "currentSystem" builtins
+        then [ builtins.currentSystem ]
+        else nixpkgs.lib.systems.flakeExposed;
+      perSystem = nixpkgs.lib.genAttrs supportedSystems;
 
-    lib = { inherit supportedSystems perSystem; };
+      lib = { inherit supportedSystems perSystem; };
 
-    defaultSettings = system: {
-      inherit nixpkgs system;
-      all-cabal-hashes = all-cabal-hashes.outPath;
-      inherit (ghc-wasm-meta.outputs.packages."${system}") wasi-sdk wasmtime;
-      node-wasm = ghc-wasm-meta.outputs.packages."${system}".nodejs;
-    };
-
-    pre-commit-check = system: pre-commit-hooks.lib.${system}.run {
-      src = ./.;
-      hooks = {
-        nixpkgs-fmt.enable = true;
-        statix.enable = true;
-        deadnix.enable = true;
-        typos.enable = true;
+      defaultSettings = system: {
+        inherit nixpkgs system;
+        all-cabal-hashes = all-cabal-hashes.outPath;
+        inherit (ghc-wasm-meta.outputs.packages."${system}") wasi-sdk wasmtime;
+        node-wasm = ghc-wasm-meta.outputs.packages."${system}".nodejs;
       };
-    };
 
-    # NOTE: change this according to the settings allowed in the ./ghc.nix file and described
-    # in the `README.md`
-    userSettings = {
-      withHadrianDeps = true;
-      withIde = true;
-    };
-  in
-  rec {
-    devShells = perSystem (system: rec {
-      default = ghc-nix;
-      ghc-nix = import ./ghc.nix (defaultSettings system // userSettings);
-      wasm-cross = import ./ghc.nix (defaultSettings system // userSettings // { withWasm = true; });
-      # Backward compat synonym
-      wasi-cross = wasm-cross;
-      js-cross = import ./ghc.nix (defaultSettings system // userSettings // {
-        crossTarget = "javascript-unknown-ghcjs";
-        withEMSDK = true;
-        withDwarf = false;
+      pre-commit-check = system: pre-commit-hooks.lib.${system}.run {
+        src = ./.;
+        hooks = {
+          nixpkgs-fmt.enable = true;
+          statix.enable = true;
+          deadnix.enable = true;
+          typos.enable = true;
+        };
+      };
+
+      # NOTE: change this according to the settings allowed in the ./ghc.nix file and described
+      # in the `README.md`
+      userSettings = {
+        withHadrianDeps = true;
+        withIde = true;
+      };
+    in
+    {
+      devShells = perSystem (system: {
+        default = self.devShells.${system}.ghc-nix;
+        ghc-nix = import ./ghc.nix (defaultSettings system // userSettings);
+        wasm-cross = import ./ghc.nix (defaultSettings system // userSettings // { withWasm = true; });
+        # Backward compat synonym
+        wasi-cross = self.devShells.${system}.wasm-cross;
+        js-cross = import ./ghc.nix (defaultSettings system // userSettings // {
+          crossTarget = "javascript-unknown-ghcjs";
+          withEMSDK = true;
+          withDwarf = false;
+        });
+
+        formatting = nixpkgs.legacyPackages.${system}.mkShell {
+          inherit (pre-commit-check system) shellHook;
+        };
       });
 
-      formatting = nixpkgs.legacyPackages.${system}.mkShell {
-        inherit (pre-commit-check system) shellHook;
+      formatter = perSystem (system:
+        nixpkgs.legacyPackages.${system}.nixpkgs-fmt
+      );
+
+      checks = perSystem (system: {
+        formatting = pre-commit-check system;
+        ghc-nix-shell = self.devShells.${system}.ghc-nix;
+      });
+
+      # NOTE: this attribute is used by the flake-compat code to allow passing arguments to ./ghc.nix
+      legacy = args: import ./ghc.nix (defaultSettings args.system // args);
+
+      templates.default = {
+        path = ./template;
+        description = "Quickly apply settings from flakes";
+        welcomeText = ''
+          Welcome to ghc.nix!
+          Set your settings in the `userSettings` attributeset in the `.ghc-nix/flake.nix`.
+          Learn more about available arguments at https://gitlab.haskell.org/ghc/ghc.nix/
+        '';
       };
-    });
 
-    formatter = perSystem (system:
-      nixpkgs.legacyPackages.${system}.nixpkgs-fmt
-    );
-
-    checks = perSystem (system: {
-      formatting = pre-commit-check system;
-      ghc-nix-shell = devShells.${system}.ghc-nix;
-    });
-
-    # NOTE: this attribute is used by the flake-compat code to allow passing arguments to ./ghc.nix
-    legacy = args: import ./ghc.nix (defaultSettings args.system // args);
-
-    templates.default = {
-      path = ./template;
-      description = "Quickly apply settings from flakes";
-      welcomeText = ''
-        Welcome to ghc.nix!
-        Set your settings in the `userSettings` attributeset in the `.ghc-nix/flake.nix`.
-        Learn more about available arguments at https://gitlab.haskell.org/ghc/ghc.nix/
-      '';
+      inherit lib;
     };
-
-    inherit lib;
-  };
 }
