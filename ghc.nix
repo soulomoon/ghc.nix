@@ -273,8 +273,8 @@ hspkgs.shellFor rec {
     export CXX=${stdenv.cc}/bin/c++
     export GHC=$NIX_GHC
     export GHCPKG=$NIX_GHCPKG
-    export HAPPY=${happy}/bin/happy
-    export ALEX=${alex}/bin/alex
+    export HAPPY=${hspkgs.happy}/bin/happy
+    export ALEX=${hspkgs.alex}/bin/alex
     export CONFIGURE=./configure
     ${lib.optionalString withEMSDK "export EMSDK=${emscripten}"}
     ${lib.optionalString withEMSDK "export EMSDK_LLVM=${emscripten}/bin/emscripten-llvm"}
