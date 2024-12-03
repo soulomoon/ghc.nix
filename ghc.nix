@@ -28,7 +28,13 @@ args@{ system ? builtins.currentSystem
 , withIde ? false
 , withHadrianDeps ? false
 , withDwarf ? (pkgsFor nixpkgs system).stdenv.isLinux  # enable libdw unwinding support
-, withGdb ? !(pkgsFor nixpkgs system).gdb.meta.broken or false && builtins.elem system (pkgsFor nixpkgs system).gdb.meta.platforms
+, withGdb ? let
+    pkgs = pkgsFor nixpkgs system;
+    # `gdb` should not be included if it is broken.
+  in
+  (!pkgs.gdb.meta.broken or false)
+  # `gdb` should only be included if it is available on the current platform.
+  && pkgs.lib.meta.availableOn system pkgs.gdb
 , withNuma ? (pkgsFor nixpkgs system).stdenv.isLinux
 , withDtrace ? (pkgsFor nixpkgs system).stdenv.isLinux
 , withGrind ? !((pkgsFor nixpkgs system).valgrind.meta.broken or false)
