@@ -68,12 +68,18 @@ build-ghc-flakes:
 smoke-test-cross:
   extends: .setup-nix
   stage: test
+  parallel:
+    matrix:
+      - TARGET: 
+        - wasm-cross
+        - wasi-cross
+        - js-cross 
+        - riscv64-linux-cross
+        - aarch64-linux-cross
+        - ppc64-linux-cross
   script:
     - pushd $(mktemp -d)
     - git clone --recurse-submodules https://gitlab.haskell.org/ghc/ghc.git
     - cd ghc/
 
-    - nix develop -Lv --fallback $CI_PROJECT_DIR#wasm-cross -c bash -c "./boot && configure_ghc"
-    - nix develop -Lv --fallback $CI_PROJECT_DIR#wasi-cross -c true
-    - nix develop -Lv --fallback $CI_PROJECT_DIR#js-cross -c bash -c "./boot && configure_ghc"
-    - nix develop -Lv --fallback $CI_PROJECT_DIR#riscv64-cross -c bash -c "./boot && configure_ghc"
+    - nix develop -Lv --fallback "$CI_PROJECT_DIR#$TARGET" -c bash -c "./boot && configure_ghc"
