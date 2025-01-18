@@ -320,3 +320,11 @@ there and it should work.
   will also be checked before committing. You can skip the check by passing `--no-verify` to the `git commit` command
 - `ghc.nix` also offers `direnv` integration, so if you have it installed, just run `direnv allow` to automatically load the
   formatting `devShell` and the accompanying pre-commit hook.
+
+### CI
+
+Which tests to run in CI pipelines is always a balance between safety and fast
+feedback cycles. Relatively fast tests and those that are crucial to gain
+confidence in most changes are run by default for all PRs. Slower and more
+exotic ones are triggered for PRs with the label `full-ci`. This is analogous
+to the usage of the `full-ci` label in the GHC project.

@@ -21,22 +21,29 @@
 stages: 
   - build 
   - test
-
+  - verify-cross
+ 
 build-shell:
   extends: .setup-nix
   stage: build
+  rules:
+    - when: always
   script:
     - nix-shell --pure shell.nix --command "echo Ok"
 
 check-flake:
   extends: .setup-nix
   stage: test
+  rules:
+    - when: always
   script:
     - nix flake check -Lv
 
 build-ghc-legacy:
   extends: .setup-nix
   stage: test
+  rules:
+    - when: always
   script:
     - pushd $(mktemp -d)
     - git clone --recurse-submodules https://gitlab.haskell.org/ghc/ghc.git
@@ -53,6 +60,8 @@ build-ghc-legacy:
 build-ghc-flakes:
   extends: .setup-nix
   stage: test
+  rules:
+    - when: always
   script:
     - pushd $(mktemp -d)
     - git clone --recurse-submodules https://gitlab.haskell.org/ghc/ghc.git
@@ -68,6 +77,8 @@ build-ghc-flakes:
 smoke-test-cross:
   extends: .setup-nix
   stage: test
+  rules:
+    - when: always
   parallel:
     matrix:
       - TARGET: 
@@ -83,3 +94,32 @@ smoke-test-cross:
     - cd ghc/
 
     - nix develop -Lv --fallback "$CI_PROJECT_DIR#$TARGET" -c bash -c "./boot && configure_ghc"
+
+# This job is expensive! Only run it when the label `full-ci` has been set at
+# the MR.
+verify-cross:
+  extends: .setup-nix
+  stage: verify-cross
+  rules:
+    - if: '$CI_MERGE_REQUEST_LABELS =~ /full-ci/'
+  parallel:
+    matrix:
+      - CONF: '{ "target": "wasm-cross", "emulator": "", "args": ""}'
+      - CONF: '{ "target": "wasi-cross", "emulator": "", "args": ""}'
+      - CONF: '{ "target": "js-cross", "emulator": "", "args": "--bignum=native"}'
+      - CONF: '{ "target": "riscv64-linux-cross", "emulator": "qemu-riscv64", "args": ""}'
+      - CONF: '{ "target": "aarch64-linux-cross", "emulator": "qemu-aarch64", "args": ""}'
+      - CONF: '{ "target": "ppc64-linux-cross", "emulator": "qemu-ppc64", "args": ""}'
+  script:
+    - pushd $(mktemp -d)
+    - git clone --recurse-submodules --depth=1 https://gitlab.haskell.org/ghc/ghc.git
+    - cd ghc/
+    - export TARGET=`echo $CONF | nix-shell -p jq --command 'jq --raw-output ".target"'`
+    - export CROSS_EMULATOR=`echo $CONF | nix-shell -p jq --command 'jq --raw-output ".emulator"'`
+    - export ADDITIONAL_HADRIAN_ARGS=`echo $CONF | nix-shell -p jq --command 'jq --raw-output ".args"'`
+    - echo "Running with TARGET=$TARGET CROSS_EMULATOR=$CROSS_EMULATOR ADDITIONAL_HADRIAN_ARGS=$ADDITIONAL_HADRIAN_ARGS" . Flake target is "$CI_PROJECT_DIR#$TARGET" 
+    - nix develop -Lv --fallback --accept-flake-config "$CI_PROJECT_DIR#$TARGET" -c bash -c "
+          cabal update;
+          ./boot && configure_ghc --disable-dwarf-unwind;
+          hadrian/build -j --flavour=quickest $ADDITIONAL_HADRIAN_ARGS;
+          hadrian/build -j --flavour=quickest $ADDITIONAL_HADRIAN_ARGS test --test-root-dirs=testsuite/tests/programs;"
