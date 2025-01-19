@@ -87,7 +87,9 @@ smoke-test-cross:
         - js-cross 
         - riscv64-linux-cross
         - aarch64-linux-cross
-        - ppc64-linux-cross
+        # PPC64 builds its entire world, because fundamental dependencies are
+        # missing in cache.nixos.org. This takes too long for our purposes.
+        # - ppc64-linux-cross
   script:
     - pushd $(mktemp -d)
     - git clone --recurse-submodules https://gitlab.haskell.org/ghc/ghc.git
@@ -109,7 +111,9 @@ verify-cross:
       - CONF: '{ "target": "js-cross", "emulator": "", "args": "--bignum=native"}'
       - CONF: '{ "target": "riscv64-linux-cross", "emulator": "qemu-riscv64", "args": ""}'
       - CONF: '{ "target": "aarch64-linux-cross", "emulator": "qemu-aarch64", "args": ""}'
-      - CONF: '{ "target": "ppc64-linux-cross", "emulator": "qemu-ppc64", "args": ""}'
+      # PPC64 builds its entire world, because fundamental dependencies are
+      # missing in cache.nixos.org. This takes too long for our purposes.
+      # - CONF: '{ "target": "ppc64-linux-cross", "emulator": "qemu-ppc64", "args": ""}'
   script:
     - pushd $(mktemp -d)
     - git clone --recurse-submodules --depth=1 https://gitlab.haskell.org/ghc/ghc.git
