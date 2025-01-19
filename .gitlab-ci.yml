@@ -1,4 +1,4 @@
-.setup-nix: 
+.setup-nix:
   tags:
     - x86_64-linux
   image: nixos/nix:latest
@@ -8,7 +8,7 @@
     - mkdir -p ~/.config/nix
     - echo "extra-experimental-features = nix-command flakes" > ~/.config/nix/nix.conf
     - nix profile install --impure nixpkgs#cachix
-    - | 
+    - |
       cachix use ghc-nix
 
       if [ -n "$CACHIX_AUTH_TOKEN" ]; then
@@ -46,7 +46,7 @@ build-ghc-legacy:
     - when: always
   script:
     - pushd $(mktemp -d)
-    - git clone --recurse-submodules https://gitlab.haskell.org/ghc/ghc.git
+    - git clone --recurse-submodules --depth=1 https://gitlab.haskell.org/ghc/ghc.git
     - cd ghc/
 
     - | 
@@ -64,7 +64,7 @@ build-ghc-flakes:
     - when: always
   script:
     - pushd $(mktemp -d)
-    - git clone --recurse-submodules https://gitlab.haskell.org/ghc/ghc.git
+    - git clone --recurse-submodules --depth=1 https://gitlab.haskell.org/ghc/ghc.git
     - cd ghc/
 
     - nix develop -Lv --fallback $CI_PROJECT_DIR# -c bash -c "
@@ -92,7 +92,7 @@ smoke-test-cross:
         # - ppc64-linux-cross
   script:
     - pushd $(mktemp -d)
-    - git clone --recurse-submodules https://gitlab.haskell.org/ghc/ghc.git
+    - git clone --recurse-submodules --depth=1 https://gitlab.haskell.org/ghc/ghc.git
     - cd ghc/
 
     - nix develop -Lv --fallback "$CI_PROJECT_DIR#$TARGET" -c bash -c "./boot && configure_ghc"
@@ -118,9 +118,10 @@ verify-cross:
     - pushd $(mktemp -d)
     - git clone --recurse-submodules --depth=1 https://gitlab.haskell.org/ghc/ghc.git
     - cd ghc/
-    - export TARGET=`echo $CONF | nix-shell -p jq --command 'jq --raw-output ".target"'`
-    - export CROSS_EMULATOR=`echo $CONF | nix-shell -p jq --command 'jq --raw-output ".emulator"'`
-    - export ADDITIONAL_HADRIAN_ARGS=`echo $CONF | nix-shell -p jq --command 'jq --raw-output ".args"'`
+    - nix profile install --impure nixpkgs#jq
+    - export TARGET=`echo $CONF | jq --raw-output ".target"`
+    - export CROSS_EMULATOR=`echo $CONF | jq --raw-output ".emulator"`
+    - export ADDITIONAL_HADRIAN_ARGS=`echo $CONF | jq --raw-output ".args"`
     - echo "Running with TARGET=$TARGET CROSS_EMULATOR=$CROSS_EMULATOR ADDITIONAL_HADRIAN_ARGS=$ADDITIONAL_HADRIAN_ARGS" . Flake target is "$CI_PROJECT_DIR#$TARGET" 
     - nix develop -Lv --fallback --accept-flake-config "$CI_PROJECT_DIR#$TARGET" -c bash -c "
           cabal update;
