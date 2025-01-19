@@ -138,6 +138,59 @@ nix develop git+https://gitlab.haskell.org/ghc/ghc.nix#js-cross
 **Note** for the JavaScript backend, use `bignum=native` or the `native_bignum`
 transformer.
 
+## Building a cross-compiler for another machine architecture
+
+The process is very similar to [_Building a WebAsm or JavaScript
+cross-compiler_](#building-a-webasm-or-javascript-cross-compiler).
+
+E.g. to build a cross-compiler from your current host to the RISC-V 64
+architecture, run
+
+```sh
+nix-shell ~/ghc.nix --arg crossTarget "riscv64-linux"
+# or
+nix develop git+https://gitlab.haskell.org/ghc/ghc.nix#riscv64-linux-cross
+```
+
+Relevant environment variables are adjusted and `CONFIGURE_ARGS`/`configure_ghc`
+provide `autoconf` parameters.
+
+Once in the shell, use `./boot && configure_ghc`, then proceed with Hadrian as
+usual.
+
+For convenience, QEMU can be added to the Nix environment using the `withQemu` boolean parameter. To
+run GHC tests, set the `CROSS_EMULATOR` environment variable to the desired QEMU
+command. E.g. `export CROSS_EMULATOR=qemu-riscv64`.
+
+### How to get the target string
+
+`ghc.nix` uses predefined cross targets from `nixpkgs.pkgsCross`. To get a
+rough overview run:
+
+```sh
+nix eval --impure --expr '(builtins.attrNames (import <nixpkgs> {}).pkgsCross)'
+```
+
+N.B. not all listed targets are supported by GHC! (Please refer to GHC's
+documentation about that.) And, `ghcjs` and `wasi` (WASM) need special
+configuration as described in [_Building a WebAsm or JavaScript
+cross-compiler_](#building-a-webasm-or-javascript-cross-compiler).
+Also, some host/target combinations do not work; e.g. Linux (host) to darwin
+(target.)
+
+`targetPlatform.config` is used to identify the correct package set. E.g. for
+RISC-V 64: `pkgsCross.riscv64-linux.targetPlatform.config`.
+
+To get a map of `pkgsCross` package sets to target strings:
+
+```sh
+nix eval --impure --expr '(builtins.mapAttrs (n: v:  v.targetPlatform.config) (import <nixpkgs> {}).pkgsCross)'
+```
+
+The details of nixpkgs' cross compilation machinery are explained in the
+[relevant sections of the nixpkgs
+manual](https://nixos.org/manual/nixpkgs/unstable/#ssec-cross-dependency-categorization).
+
 ## Cachix
 
 There is a Cachix cache ([ghc-nix](https://app.cachix.org/cache/ghc-nix)) which is filled by our CI. To use it, run the following command and follow the instructions:
@@ -242,6 +295,8 @@ be careful to specify the path to the `shell.nix`, not to the `default.nix`.
 | `withEMSDK` | whether to include `emscripten` for the js-backend, will create an `.emscripten_cache` folder in your working directory of the shell for writing. `EM_CACHE` is set to that path, prevents [sub word sized atomic](https://gitlab.haskell.org/ghc/ghc/-/wikis/javascript-backend/building#configure-fails-with-sub-word-sized-atomic-operations-not-available) kinds of issues | `false` | ❌ |
 | `withWasm` | whether to include `wasi-sdk` & `wasmtime` for the ghc wasm backend | `false` | ❌ |
 | `withFindNoteDef` | install a shell script `find_note_def`; `find_note_def "Adding a language extension"` will point to the definition of the Note "Adding a language extension" | `true` | ❌ |
+| crossTarget | provide an env to build a GHC cross-compiler (host != target) | `null` | ❌|
+| withQemu | provide QEMU for all available architectures| false | ❌|
 
 ## `direnv`
 
@@ -265,3 +320,11 @@ there and it should work.
   will also be checked before committing. You can skip the check by passing `--no-verify` to the `git commit` command
 - `ghc.nix` also offers `direnv` integration, so if you have it installed, just run `direnv allow` to automatically load the
   formatting `devShell` and the accompanying pre-commit hook.
+
+### CI
+
+Which tests to run in CI pipelines is always a balance between safety and fast
+feedback cycles. Relatively fast tests and those that are crucial to gain
+confidence in most changes are run by default for all PRs. Slower and more
+exotic ones are triggered for PRs with the label `full-ci`. This is analogous
+to the usage of the `full-ci` label in the GHC project.

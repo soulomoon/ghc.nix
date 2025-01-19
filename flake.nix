@@ -40,7 +40,6 @@
     , all-cabal-hashes
     , pre-commit-hooks
     , ghc-wasm-meta
-    ,
     }:
     let
       supportedSystems =
@@ -81,6 +80,11 @@
         default = self.devShells.${system}.ghc-nix;
         ghc-nix = import ./ghc.nix (defaultSettings system // userSettings);
         wasm-cross = import ./ghc.nix (defaultSettings system // userSettings // { withWasm = true; });
+        llvm = import ./ghc.nix (defaultSettings system // userSettings // {
+          withLlvm = true;
+          # This is optional, but shows how to use Clang to compile C code
+          useClang = true;
+        });
         # Backward compat synonym
         wasi-cross = self.devShells.${system}.wasm-cross;
         js-cross = import ./ghc.nix (defaultSettings system // userSettings // {
@@ -88,12 +92,26 @@
           withEMSDK = true;
           withDwarf = false;
         });
+        riscv64-linux-cross = import ./ghc.nix (defaultSettings system // userSettings
+          // {
+          crossTarget = "riscv64-unknown-linux-gnu";
+          withQemu = true;
+        });
+        aarch64-linux-cross = import ./ghc.nix (defaultSettings system // userSettings
+          // {
+          crossTarget = "aarch64-unknown-linux-gnu";
+          withQemu = true;
+        });
+        ppc64-linux-cross = import ./ghc.nix (defaultSettings system // userSettings
+          // {
+          crossTarget = "powerpc64-unknown-linux-gnuabielfv2";
+          withQemu = true;
+        });
 
         formatting = nixpkgs.legacyPackages.${system}.mkShell {
           inherit (pre-commit-check system) shellHook;
         };
       });
-
       formatter = perSystem (system:
         nixpkgs.legacyPackages.${system}.nixpkgs-fmt
       );
