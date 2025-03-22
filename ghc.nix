@@ -103,7 +103,7 @@ let
     null
     (builtins.attrValues pkgs.pkgsCross);
 
-  crossPkgs = if crossPkgs' == null then pkgs else crossPkgs';
+  crossPkgs = if crossTarget == null || crossPkgs' == null then pkgs else crossPkgs';
 
   llvmForGhc = pkgs.llvm_13;
 
