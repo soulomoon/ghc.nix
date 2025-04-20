@@ -107,6 +107,12 @@
           crossTarget = "powerpc64-unknown-linux-gnuabielfv2";
           withQemu = true;
         });
+        # 32bit Intel
+        i686-linux-cross = import ./ghc.nix (defaultSettings system // userSettings
+          // {
+          crossTarget = "i686-unknown-linux-gnu";
+          withQemu = true;
+        });
 
         formatting = nixpkgs.legacyPackages.${system}.mkShell {
           inherit (pre-commit-check system) shellHook;
