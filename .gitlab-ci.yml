@@ -87,6 +87,7 @@ smoke-test-cross:
         - js-cross 
         - riscv64-linux-cross
         - aarch64-linux-cross
+        - i686-linux-cross
         # PPC64 builds its entire world, because fundamental dependencies are
         # missing in cache.nixos.org. This takes too long for our purposes.
         # - ppc64-linux-cross
@@ -111,6 +112,7 @@ verify-cross:
       - CONF: '{ "target": "js-cross", "emulator": "", "args": "--bignum=native"}'
       - CONF: '{ "target": "riscv64-linux-cross", "emulator": "qemu-riscv64", "args": ""}'
       - CONF: '{ "target": "aarch64-linux-cross", "emulator": "qemu-aarch64", "args": ""}'
+      - CONF: '{ "target": "i686-linux-cross", "emulator": "qemu-i386", "args": ""}'
       # PPC64 builds its entire world, because fundamental dependencies are
       # missing in cache.nixos.org. This takes too long for our purposes.
       # - CONF: '{ "target": "ppc64-linux-cross", "emulator": "qemu-ppc64", "args": ""}'
