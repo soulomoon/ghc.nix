@@ -150,7 +150,7 @@ let
   ++ lib.optional withDwarf pkgs.elfutils
   ++ lib.optional withGdb pkgs.gdb
   ++ lib.optional withGhcid pkgs.ghcid
-  ++ lib.optional withIde pkgs.haskell-language-server
+  ++ lib.optional withIde pkgs.haskell.packages.${bootghc}.haskell-language-server
   ++ lib.optional withIde pkgs.clang-tools # N.B. clang-tools for clangd
   ++ lib.optional withDtrace pkgs.linuxPackages.systemtap
   ++ lib.optional withQemu pkgs.qemu
