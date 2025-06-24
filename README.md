@@ -22,6 +22,12 @@ Hence, an invocation on an `x86_64` Linux system would look like this:
 nix-shell https://gitlab.haskell.org/ghc/ghc.nix/-/archive/main/ghc.nix-main.tar.gz --attr devShells.x86_64-linux.default
 ```
 
+> **Warning**
+>
+> Starting with cpp nix version 2.28, nix now automatically loads `shell.nix` files instead of `default.nix`. 
+> This means that if you are on this nix version or greater, you should omit the `--attr` argument to the 
+> `nix-shell` command above.
+
 ### Using flakes
 
 This repository is flakes enabled, which means, that you can more easily get a `devShell` using:
