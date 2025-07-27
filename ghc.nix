@@ -139,7 +139,7 @@ let
     crossPkgs.zlib.out
     crossPkgs.zlib.dev
     pkgs.hlint
-    # pkgs.clang # Always provide clang in the shell
+    pkgs.clang # Always provide clang in the shell
   ]
   ++ docsPackages
   ++ lib.optional withLlvm llvmForGhc
