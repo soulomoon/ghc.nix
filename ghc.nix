@@ -288,7 +288,6 @@ hspkgs.shellFor {
     export RANLIB=${stdenv.cc.bintools.bintools}/bin/${stdenv.cc.targetPrefix}ranlib
     export NM=${stdenv.cc.bintools.bintools}/bin/${stdenv.cc.targetPrefix}nm
     export LD=${stdenv.cc.bintools}/bin/${stdenv.cc.targetPrefix}ld
-    export LLVMAS=${stdenv.cc}/bin/${stdenv.cc.targetPrefix}clang
     export GHC=$NIX_GHC
     export GHCPKG=$NIX_GHCPKG
     export HAPPY=${hspkgs.happy}/bin/happy
@@ -307,6 +306,7 @@ hspkgs.shellFor {
     ''}
     ${lib.optionalString withLlvm "export LLC=${llvmForGhc}/bin/llc"}
     ${lib.optionalString withLlvm "export OPT=${llvmForGhc}/bin/opt"}
+    ${lib.optionalString withLlvm "export LLVMAS=${llvmForGhc}/bin/llvm-as"}
 
     # "nix-shell --pure" resets LANG to POSIX, this breaks "make TAGS".
     export LANG="en_US.UTF-8"
