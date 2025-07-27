@@ -83,7 +83,7 @@
         llvm = import ./ghc.nix (defaultSettings system // userSettings // {
           withLlvm = true;
           # This is optional, but shows how to use Clang to compile C code
-          useClang = true;
+          useClang = false;
         });
         # Backward compat synonym
         wasi-cross = self.devShells.${system}.wasm-cross;
