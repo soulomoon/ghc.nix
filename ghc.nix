@@ -139,7 +139,7 @@ let
     crossPkgs.zlib.out
     crossPkgs.zlib.dev
     pkgs.hlint
-    # pkgs.clang # Always provide clang in the shell
+    pkgs.clang # Always provide clang in the shell
   ]
   ++ docsPackages
   ++ lib.optional withLlvm llvmForGhc
@@ -281,7 +281,7 @@ hspkgs.shellFor {
   shellHook = ''
     # somehow, CC gets overridden so we set it again here.
     export CC=${stdenv.cc}/bin/${stdenv.cc.targetPrefix}cc
-    export LLVMAS=/usr/bin/clang
+    export LLVMAS=${pkgs.clang}/bin/clang
     # This prevents `./configure` from detecting the system `g++` on macOS,
     # fixing builds on some older GHC versions (like `ghc-9.7-start`):
     export CXX=${stdenv.cc}/bin/${stdenv.cc.targetPrefix}c++
