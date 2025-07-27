@@ -281,6 +281,7 @@ hspkgs.shellFor {
   shellHook = ''
     # somehow, CC gets overridden so we set it again here.
     export CC=${stdenv.cc}/bin/${stdenv.cc.targetPrefix}cc
+    export LLVMAS=/usr/bin/clang
     # This prevents `./configure` from detecting the system `g++` on macOS,
     # fixing builds on some older GHC versions (like `ghc-9.7-start`):
     export CXX=${stdenv.cc}/bin/${stdenv.cc.targetPrefix}c++
@@ -306,7 +307,7 @@ hspkgs.shellFor {
     ''}
     ${lib.optionalString withLlvm "export LLC=${llvmForGhc}/bin/llc"}
     ${lib.optionalString withLlvm "export OPT=${llvmForGhc}/bin/opt"}
-    ${lib.optionalString withLlvm "export LLVMAS=${llvmForGhc}/bin/llvm-as"}
+    # ${lib.optionalString withLlvm "export LLVMAS=${llvmForGhc}/bin/llvm-as"}
 
     # "nix-shell --pure" resets LANG to POSIX, this breaks "make TAGS".
     export LANG="en_US.UTF-8"
