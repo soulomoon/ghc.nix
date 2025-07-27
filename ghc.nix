@@ -139,7 +139,7 @@ let
     crossPkgs.zlib.out
     crossPkgs.zlib.dev
     pkgs.hlint
-    pkgs.clang # Always provide clang in the shell
+    # pkgs.clang # Always provide clang in the shell
   ]
   ++ docsPackages
   ++ lib.optional withLlvm llvmForGhc
@@ -288,7 +288,7 @@ hspkgs.shellFor {
     export RANLIB=${stdenv.cc.bintools.bintools}/bin/${stdenv.cc.targetPrefix}ranlib
     export NM=${stdenv.cc.bintools.bintools}/bin/${stdenv.cc.targetPrefix}nm
     export LD=${stdenv.cc.bintools}/bin/${stdenv.cc.targetPrefix}ld
-    export LLVMAS=${llvmForGhc}/bin/${stdenv.cc.targetPrefix}clang
+    export LLVMAS=${stdenv.cc}/bin/${stdenv.cc.targetPrefix}clang
     export GHC=$NIX_GHC
     export GHCPKG=$NIX_GHCPKG
     export HAPPY=${hspkgs.happy}/bin/happy
